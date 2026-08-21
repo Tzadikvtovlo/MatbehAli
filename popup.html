@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>מטבעלי</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-right">
+      <img src="images/icon16.png" alt="אייקון התוסף" class="app-icon">
+    </div>
+    <div class="header-center">
+      <h1>מטבעלי</h1>
+    </div>
+    <div class="header-left">
+      <button id="statusIcon" class="status-badge" title="בודק סטטוס..."></button>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-row">
+      <span class="label">איסוף מטבעות אחרון:</span>
+      <span id="lastCollectedTime" class="value">-</span>
+    </div>
+    <div class="info-row">
+      <span class="label">ריצה אחרונה:</span>
+      <span id="lastRunTime" class="value">-</span>
+    </div>
+    <div class="info-row">
+      <span class="label">סטטוס ריצה אחרונה:</span>
+      <span id="lastRunStatus" class="value">-</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnRun" class="btn btn-primary">הרץ מחדש</button>
+    <button id="btnTrivia" class="btn btn-secondary">פכים קטנים</button>
+    <button id="btnSettings" class="btn btn-outline">מידע והגדרות</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

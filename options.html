@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>מטבעלי - הגדרות</title>
+    <style>
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #FAF8ED; 
+            color: #111827; 
+            margin: 0; 
+            padding: 30px; 
+            display: flex; 
+            justify-content: center; 
+        } 
+        .container { 
+            background: #ffffff; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); 
+            width: 100%; 
+            max-width: 600px; 
+            border: 1px solid #FEF08A;
+        }
+        .header-container { 
+            display: flex; 
+            align-items: center; 
+            border-bottom: 2px solid #FEF08A; 
+            padding-bottom: 15px; 
+            position: relative; 
+            margin-bottom: 25px; 
+        }
+        .header-container img { 
+            position: absolute; 
+            right: 0; 
+            width: 36px; 
+            height: 36px; 
+        }
+        h1 { 
+            margin: 0; 
+            flex: 1; 
+            text-align: center; 
+            font-size: 26px; 
+            color: #D32F2F; 
+            font-weight: bold; 
+        }
+        .section { margin-top: 25px; }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 3px solid #FEF08A;
+            padding-bottom: 6px;
+        }
+        .section-header h3 { 
+            font-size: 18px; 
+            margin: 0; 
+            color: #D32F2F; 
+        }
+        .btn-refresh {
+            background: #FEF9C3; 
+            color: #D32F2F;
+            border: 1px solid #FDE047;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .btn-refresh:hover {
+            background: #FEF08A;
+            transform: rotate(180deg);
+        }
+        .btn-refresh:active {
+            transform: scale(0.92);
+        }
+
+        .box { 
+            background: #FFFDF0; 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            border: 1px solid #FEF08A; 
+            margin-bottom: 15px; 
+        }
+        .row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding-bottom: 10px; 
+            margin-bottom: 10px; 
+            border-bottom: 1px dashed #FEF08A; 
+        }
+        .row:last-child { 
+            border-bottom: none; 
+            margin-bottom: 0; 
+            padding-bottom: 0; 
+        }
+        .label { font-weight: bold; color: #4b5563; font-size: 15px; }
+        .value { color: #111827; font-size: 15px; font-weight: 500; }
+        
+        .btn-group-row { 
+            display: flex; 
+            flex-direction: row; 
+            gap: 10px; 
+            margin-top: 20px; 
+        }
+        .btn-group-row .btn {
+            flex: 1;
+            padding: 10px 5px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .btn { 
+            display: inline-block; 
+            padding: 12px 15px; 
+            background: #FEF9C3; 
+            color: #D32F2F; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            text-align: center; 
+            border: 1px solid #FDE047; 
+            cursor: pointer; 
+            font-family: inherit; 
+            font-size: 15px; 
+            transition: all 0.2s ease; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+        } 
+        .btn:hover { 
+            background: #FEF08A; 
+            transform: translateY(-1px); 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.08); 
+        }
+        .btn:active { 
+            transform: translateY(1px); 
+            box-shadow: none; 
+        }
+        .btn:disabled { 
+            background: #FAF8ED; 
+            color: #9ca3af; 
+            border-color: #E5E7EB; 
+            cursor: not-allowed; 
+            box-shadow: none; 
+            transform: none; 
+        }
+
+        .footer { 
+            margin-top: 30px; 
+            text-align: center; 
+            font-size: 13px; 
+            color: #4b5563; 
+            border-top: 1px solid #FEF08A; 
+            padding-top: 15px; 
+            line-height: 1.8; 
+        }
+        .footer a { 
+            color: #D32F2F; 
+            text-decoration: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: color 0.2s; 
+        }
+        .footer a:hover { 
+            color: #b71c1c; 
+            text-decoration: underline; 
+        }
+        .tooltip-container { position: relative; display: inline-block; }
+        .tooltip { 
+            visibility: hidden; 
+            width: 100px; 
+            background-color: #D32F2F; 
+            color: #FEF9C3; 
+            text-align: center; 
+            border-radius: 6px; 
+            padding: 5px; 
+            position: absolute; 
+            z-index: 1; 
+            bottom: 125%; 
+            left: 50%; 
+            margin-left: -50px; 
+            opacity: 0; 
+            transition: opacity 0.3s; 
+            font-size: 12px; 
+            font-weight: bold; 
+        }
+        .tooltip::after { 
+            content: ""; 
+            position: absolute; 
+            top: 100%; 
+            left: 50%; 
+            margin-left: -5px; 
+            border-width: 5px; 
+            border-style: solid; 
+            border-color: #D32F2F transparent transparent transparent; 
+        }
+        .tooltip-container.show-tooltip .tooltip { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-container">
+            <img src="images/icon48.png" alt="לוגו">
+            <h1>מטבעלי</h1>
+        </div>
+        
+        <div class="section">
+            <div class="box">
+                <div class="row" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                    <button class="btn-refresh" id="btn-check-connection" title="רענון / בדוק חיבור">&#8635;</button>
+                    
+                    <div style="flex: 1; text-align: center; padding: 0 10px;">
+                        <span class="value" id="account-username">בודק...</span>
+                        <a id="btn-login" class="btn" style="display: none; padding: 6px 12px; font-size: 13px; text-decoration: none;" href="https://he.aliexpress.com/?spm=a2g0o.detail.logo.1.19aaCNDHCNDHWL" target="_blank">התחבר כעת</a>
+                    </div>
+                    
+                    <span class="value" id="account-status" style="font-weight: bold;">בודק...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="box">
+                <div class="row">
+                    <span class="label">ריצה אחרונה:</span>
+                    <span class="value" id="opt-last-run-time" style="direction: ltr;">טוען...</span>
+                </div>
+                <div class="row">
+                    <span class="label">סטטוס:</span>
+                    <span class="value" id="opt-last-run-status">---</span>
+                </div>
+            </div>
+
+            <div class="box">
+                <div class="row">
+                    <span class="label">איסוף מטבעות אחרון:</span>
+                    <span class="value" id="opt-last-collected-time" style="direction: ltr;">---</span>
+                </div>
+                <div class="row">
+                    <span class="label">ריצה ללא איסוף אחרונה:</span>
+                    <span class="value" id="opt-last-nocollect-time" style="direction: ltr;">---</span>
+                </div>
+                <div class="row">
+                    <span class="label">ריצה אחרונה שנכשלה:</span>
+                    <span class="value" id="opt-last-fail-time" style="direction: ltr;">---</span>
+                </div>
+            </div>
+            
+            <div class="btn-group-row">
+                <button class="btn" id="btn-rerun">הרץ מחדש</button>
+                <button class="btn" id="btn-check-updates">בדיקת עדכונים</button>
+                <button class="btn" id="btn-little-details">פכים קטנים</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>כל הזכויות שמורות</div>
+            <div><a href="https://github.com/Tzadikvtovlo" target="_blank">צדיק וטוב לו</a></div>
+            <div>
+                <span class="tooltip-container" id="email-container">
+                    <a id="copy-email">q9411aa@gmail.com</a>
+                    <span class="tooltip" id="email-tooltip">הועתק ללוח!</span>
+                </span>
+            </div>
+            <div>
+                <a href="https://github.com/Tzadikvtovlo/MatbehAli" target="_blank">תן כוכב</a>
+            </div>
+        </div>
+    </div>
+    <script src="options.js"></script>
+</body>
+</html>
