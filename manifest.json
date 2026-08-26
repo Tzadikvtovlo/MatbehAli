@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "מטבעעלי",
+  "version": "0.8",
+  "icons": {
+    "16": "images/ICON16.png",
+    "48": "images/ICON48.png",
+    "128": "images/ICON128.png"
+  },
+  "permissions": [
+    "cookies",
+    "storage",
+    "alarms",
+    "notifications",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://*.aliexpress.com/",
+    "https://api.github.com/*",
+    "https://raw.githubusercontent.com/*"
+  ],
+  "options_page": "options.html",
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "ruleset_1",
+      "enabled": true,
+      "path": "rules.json"
+    }]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.aliexpress.com/*"],
+      "js": ["innerCoinsContent.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/ICON16.png",
+      "48": "images/ICON48.png",
+      "128": "images/ICON128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
