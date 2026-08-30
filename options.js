@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentVersion = chrome.runtime.getManifest().version;
     const versionDisplay = document.getElementById("version-display");
     if (versionDisplay) {
-        versionDisplay.textContent = `גירסא ${currentVersion}`;
+        versionDisplay.textContent = `v ${currentVersion}`;
     }
 
     const statusEl = document.getElementById("account-status");
@@ -14,6 +14,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const noCollectTimeEl = document.getElementById("opt-last-nocollect-time");
     const failTimeEl = document.getElementById("opt-last-fail-time");
     
+    const chkIconReplace = document.getElementById("chkIconReplace");
+    const chkIconBadge = document.getElementById("chkIconBadge");
+
+    chrome.storage.local.get(["iconDisplayReplace", "iconDisplayBadge"], (res) => {
+        chkIconReplace.checked = res.iconDisplayReplace !== false; 
+        chkIconBadge.checked = res.iconDisplayBadge === true; 
+
+        const saveAndTriggerIconCheck = () => {
+            chrome.storage.local.set({ 
+                iconDisplayReplace: chkIconReplace.checked,
+                iconDisplayBadge: chkIconBadge.checked
+            }, () => {
+                chrome.runtime.sendMessage({ action: "checkAndUpdateIcon" });
+            });
+        };
+
+        chkIconReplace.addEventListener("change", saveAndTriggerIconCheck);
+        chkIconBadge.addEventListener("change", saveAndTriggerIconCheck);
+    });
+
     function loadAccountInfo() {
         statusEl.textContent = "בודק...";
         usernameEl.textContent = "בודק...";
@@ -65,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // פונקציה משופרת לבדיקת עדכונים שכוללת גם אפשרות לבדיקה "שקטה" ברקע
     async function performUpdateCheck(displayElement, originalText, isSilent = false) {
         if (!isSilent) displayElement.textContent = "בודק...";
         try {
@@ -76,12 +95,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const latestVersion = data.version;
             
             if (parseFloat(latestVersion) > parseFloat(currentVersion)) {
-                displayElement.textContent = `עדכון! מותקן: ${currentVersion} | זמין: ${latestVersion}`;
-                displayElement.onclick = () => window.open("https://github.com/Tzadikvtovlo/MatbehAli", '_blank');
+                // יש עדכון: שינוי הטקסט, שינוי הטולטיפ, והפעלת האנימציה
+                displayElement.textContent = `מותקן: v${currentVersion} | זמין: v${latestVersion}`;
+                displayElement.title = "לחץ כאן להורדה";
+                displayElement.classList.add("update-available-pulse");
+                
                 chrome.storage.local.set({ hasGitHubUpdate: true }, () => {
                     chrome.runtime.sendMessage({ action: "checkAndUpdateIcon" });
                 });
             } else {
+                // אין עדכון: החזרת הטולטיפ הרגיל וכיבוי האנימציה
+                displayElement.title = "לחץ לבדיקת עדכונים";
+                displayElement.classList.remove("update-available-pulse");
+                
                 if (!isSilent) displayElement.textContent = "אתה מעודכן";
                 chrome.storage.local.set({ hasGitHubUpdate: false }, () => {
                     chrome.runtime.sendMessage({ action: "checkAndUpdateIcon" });
@@ -101,10 +127,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (versionDisplay) {
-        // לחיצה יזומה של המשתמש על מספר הגירסא - תציג חיווי גלוי
-        versionDisplay.addEventListener("click", () => performUpdateCheck(versionDisplay, `גירסא ${currentVersion}`, false));
+        // מנגנון חכם: אם יש עדכון, לחיצה פותחת את דף ההורדה. אם לא - היא מריצה בדיקה
+        versionDisplay.onclick = () => {
+            if (versionDisplay.classList.contains("update-available-pulse")) {
+                window.open("https://github.com/Tzadikvtovlo/MatbehAli", '_blank');
+            } else {
+                performUpdateCheck(versionDisplay, `v ${currentVersion}`, false);
+            }
+        };
         
-        // הרצה אוטומטית (ושקטה) בכל פעם שפותחים את דף ההגדרות
+        // הרצה אוטומטית כשהדף נטען
         performUpdateCheck(versionDisplay, `גירסא ${currentVersion}`, true);
     }
 
