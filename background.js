@@ -3,23 +3,61 @@ importScripts("crypto-js.min.js", "innerCoins.js");
 let isCollecting = false;
 const ALARM_NAME = "hourlyCoinCollection";
 
-function updateIcon(statusType) {
-    let prefix = "ICON";
-    if (statusType === "DISCONNECTED" || statusType === "FAILED") {
-        prefix = "DICON";
-    } else if (statusType === "UPDATE_AVAILABLE") {
-        prefix = "NICON";
-    } else if (statusType === "SUCCESS") {
-        prefix = "ICON";
+async function updateIcon(statusType) {
+    const storage = await chrome.storage.local.get(["iconDisplayReplace", "iconDisplayBadge"]);
+    // ברירת מחדל: שינוי תמונה דלוק, סמלון כבוי
+    const useReplace = storage.iconDisplayReplace !== false;
+    const useBadge = storage.iconDisplayBadge === true;
+
+    let iconPrefix = "ICON";
+    let badgeText = "";
+
+    // שימוש בתווים סטנדרטיים במקום אימוג'י - כדי למנוע חסימה של הלוגו
+    switch (statusType) {
+        case "CHECKING":
+            iconPrefix = "ICON";
+            badgeText = "•"; // נקודה קטנה מסמלת טעינה/בדיקה
+            break;
+        case "DISCONNECTED":
+        case "FAILED":
+            iconPrefix = "DICON";
+            badgeText = "X";
+            break;
+        case "UPDATE_AVAILABLE":
+            iconPrefix = "NICON";
+            badgeText = "!";
+            break;
+        case "NEEDS_COLLECTION":
+            iconPrefix = "ICON";
+            badgeText = "?";
+            break;
+        case "SUCCESS":
+            iconPrefix = "ICON";
+            badgeText = "";
+            break;
     }
 
+    // 1. קביעת הלוגו המרכזי
+    const finalPrefix = useReplace ? iconPrefix : "ICON";
     chrome.action.setIcon({
         path: {
-            "16": `images/${prefix}16.png`,
-            "48": `images/${prefix}48.png`,
-            "128": `images/${prefix}128.png`
+            "16": `images/${finalPrefix}16.png`,
+            "48": `images/${finalPrefix}48.png`,
+            "128": `images/${finalPrefix}128.png`
         }
     });
+
+    // 2. קביעת סמלון ההתרעה
+    const finalBadge = useBadge ? badgeText : "";
+    chrome.action.setBadgeText({ text: finalBadge });
+    
+    // רקע שקוף לחלוטין (כעת יעבוד מושלם בזכות הסרת האימוג'י)
+    chrome.action.setBadgeBackgroundColor({ color: [0, 0, 0, 0] });
+    
+    // צביעת הטקסט עצמו באדום הנוכח (נתמך בגרסאות כרום מתקדמות)
+    try {
+        chrome.action.setBadgeTextColor({ color: "#D32F2F" });
+    } catch(e) {}
 }
 
 async function checkForUpdates() {
@@ -41,23 +79,38 @@ async function checkForUpdates() {
 }
 
 async function checkAndUpdateIconStatus(accountInfo = null) {
-    const storage = await chrome.storage.local.get(["hasGitHubUpdate"]);
+    const storage = await chrome.storage.local.get(["hasGitHubUpdate", "lastSuccessMs"]);
     if (!accountInfo) {
         accountInfo = await getAccountInfo();
     }
     
-    if (!accountInfo.isConnected) {
-        updateIcon("DISCONNECTED");
-    } else if (storage.hasGitHubUpdate) {
-        updateIcon("UPDATE_AVAILABLE");
+    const TWENTY_HOURS_MS = 20 * 60 * 60 * 1000;
+    let needsCollection = false;
+    
+    if (storage.lastSuccessMs) {
+        if (Date.now() - storage.lastSuccessMs > TWENTY_HOURS_MS) {
+            needsCollection = true;
+        }
     } else {
-        updateIcon("SUCCESS");
+        needsCollection = true; 
+    }
+
+    if (!accountInfo.isConnected) {
+        await updateIcon("DISCONNECTED");
+    } else if (storage.hasGitHubUpdate) {
+        await updateIcon("UPDATE_AVAILABLE");
+    } else if (needsCollection) {
+        await updateIcon("NEEDS_COLLECTION");
+    } else {
+        await updateIcon("SUCCESS");
     }
 }
 
 async function triggerCoinCollection(manual = false) {
     if (isCollecting) return { status: "RUNNING", message: "רץ-כעת..." };
     isCollecting = true;
+    
+    await updateIcon("CHECKING");
 
     try {
         const result = await fetchCoins();
@@ -84,11 +137,11 @@ async function triggerCoinCollection(manual = false) {
         }
 
         const data = result?.data?.data;
-        updates.lastSuccessMs = Date.now(); 
 
         if (data?.signSuccess) {
             updates.lastRunStatus = "אסף בהצלחה";
             updates.lastCollectedTime = timeString;
+            updates.lastSuccessMs = Date.now(); 
             await chrome.storage.local.set(updates);
             await checkAndUpdateIconStatus();
             return { status: "COLLECTED", message: "אסף בהצלחה" };
@@ -96,6 +149,7 @@ async function triggerCoinCollection(manual = false) {
         } else if (data?.todayAlreadySign) {
             updates.lastRunStatus = "אין איסוף זמין";
             updates.lastNoCollectTime = timeString;
+            updates.lastSuccessMs = Date.now(); 
             await chrome.storage.local.set(updates);
             await checkAndUpdateIconStatus();
             return { status: "NO_COLLECT", message: "אין איסוף זמין" };
@@ -105,7 +159,6 @@ async function triggerCoinCollection(manual = false) {
             updates.lastRunStatus = "נכשל: " + errorMsg;
             updates.lastFailTime = timeString;
             updates.lastFailReason = errorMsg;
-            delete updates.lastSuccessMs; 
             
             await chrome.storage.local.set(updates);
             await checkAndUpdateIconStatus();
@@ -221,14 +274,12 @@ async function getAccountInfo() {
             let username = "משתמש מחובר";
             let extractedName = null;
 
-            // פונקציית עזר לחילוץ חכם של שם המשתמש או האימייל מתוך עוגיות שונות
             const tryExtract = (cookieName, regex = null) => {
                 if (extractedName) return; 
                 const c = cookies.find(c => c.name === cookieName);
                 if (c && c.value) {
                     try {
                         let val = decodeURIComponent(c.value);
-                        // אם העוגייה קודדה פעמיים ננסה לפענח שוב
                         if (val.includes('%')) val = decodeURIComponent(val);
                         
                         if (regex) {
@@ -239,10 +290,8 @@ async function getAccountInfo() {
                         
                         val = val.replace(/^"+|"+$/g, '').trim();
 
-                        // תיקון למחרוזת של אליאקספרס - חיתוך חלקים לא רלוונטיים במקרה של תווים מפרידים |
                         if (val.includes('|')) {
                             const parts = val.split('|');
-                            // דוגמה למבנה: US|AA|312|ifm|4178485906 -> לוקחים את 'AA' ואת '312'
                             if (parts.length >= 3) {
                                 val = parts[1] + " " + parts[2];
                             }
@@ -255,12 +304,11 @@ async function getAccountInfo() {
                 }
             };
 
-            // מעבר לפי סדר עדיפויות על העוגיות המכילות לרוב את זהות המשתמש:
-            tryExtract("sn"); // Screen Name - לעיתים מכיל את השם המפוצל בקווי הפרדה
-            tryExtract("_w_tb_nick"); // כינוי תצוגה
-            tryExtract("_nk_"); // כינוי קלאסי (הישן)
-            tryExtract("notice_user_nick"); // כינוי נוטיפיקציות
-            tryExtract("xman_us_f", /x_user=([^&]+)/); // לרוב מכיל את כתובת האימייל המחוברת
+            tryExtract("sn"); 
+            tryExtract("_w_tb_nick"); 
+            tryExtract("_nk_"); 
+            tryExtract("notice_user_nick"); 
+            tryExtract("xman_us_f", /x_user=([^&]+)/); 
 
             if (extractedName) {
                 username = extractedName;
@@ -335,6 +383,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true; 
     }
     if (request.action === "getAccountInfo") {
+        updateIcon("CHECKING");
         getAccountInfo().then(async res => {
             await checkAndUpdateIconStatus(res);
             sendResponse(res);
