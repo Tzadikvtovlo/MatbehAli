@@ -22,8 +22,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 window.addEventListener('load', () => {
-    // הגנת ברזל: אם החלון רחב מ-600 פיקסלים, זה בוודאות דפדפן רגיל ולא חלונית האיסוף המוקטנת. 
-    // נכבה את הסקריפט כדי לא להפריע לגלישה הרגילה לעולם!
     if (window.innerWidth > 600) return;
 
     chrome.storage.local.get(null, (state) => {
@@ -79,9 +77,9 @@ function showIndicator(text, themeType) {
     } else if (themeType === "WAIT") {
         bgColor = "#fef2f2"; textColor = "#991b1b"; borderColor = "#fecaca";
     } else if (themeType === "PASS") {
-        bgColor = "#fffbeb"; textColor = "#92400e"; borderColor = "#fde68a";
+        bgColor = "#FFFBE6"; textColor = "#92400e"; borderColor = "#FFD700";
     } else { 
-        bgColor = "#FFFDF0"; textColor = "#D32F2F"; borderColor = "#FEF08A";
+        bgColor = "#FFFFFF"; textColor = "#D32F2F"; borderColor = "#FFD700";
     }
 
     let el = document.getElementById('matbehAli-indicator');
@@ -108,12 +106,12 @@ function showStartButton() {
         btn.innerHTML = '▶ התחל איסוף עכשיו';
         btn.style.cssText = `
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 2147483647; background: #FEF9C3; color: #D32F2F; padding: 16px 30px;
+            z-index: 2147483647; background: #FFF066; color: #D32F2F; padding: 16px 30px;
             border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 2px solid #FDE047; cursor: pointer; direction: rtl; font-family: sans-serif; transition: all 0.2s ease;
+            border: 2px solid #FFD700; cursor: pointer; direction: rtl; font-family: sans-serif; transition: all 0.2s ease;
         `;
-        btn.onmouseover = () => { btn.style.background = '#FEF08A'; btn.style.transform = 'translateX(-50%) translateY(-2px)'; };
-        btn.onmouseout = () => { btn.style.background = '#FEF9C3'; btn.style.transform = 'translateX(-50%)'; };
+        btn.onmouseover = () => { btn.style.background = '#FFE033'; btn.style.transform = 'translateX(-50%) translateY(-2px)'; };
+        btn.onmouseout = () => { btn.style.background = '#FFF066'; btn.style.transform = 'translateX(-50%)'; };
         
         if (document.body) document.body.appendChild(btn);
     }
@@ -133,7 +131,7 @@ function showAskDialog(message) {
         overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2147483647;display:flex;align-items:center;justify-content:center;';
 
         const box = document.createElement('div');
-        box.style.cssText = 'background:#FAF8ED;padding:24px;border-radius:12px;text-align:center;width:80%;max-width:320px;direction:rtl;font-family:sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.2);border:1px solid #FEF08A;';
+        box.style.cssText = 'background:#FFFFFF;padding:24px;border-radius:12px;text-align:center;width:80%;max-width:320px;direction:rtl;font-family:sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.2);border:1px solid #FFD700;';
 
         const msg = document.createElement('div');
         msg.textContent = message;
@@ -144,9 +142,9 @@ function showAskDialog(message) {
 
         const btnRetry = document.createElement('button');
         btnRetry.textContent = 'נסה שוב';
-        btnRetry.style.cssText = 'flex:1;background:#FEF9C3;color:#D32F2F;border:1px solid #FDE047;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:background 0.2s;';
-        btnRetry.onmouseover = () => btnRetry.style.background = '#FEF08A';
-        btnRetry.onmouseout = () => btnRetry.style.background = '#FEF9C3';
+        btnRetry.style.cssText = 'flex:1;background:#FFF066;color:#D32F2F;border:1px solid #FFD700;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:background 0.2s;';
+        btnRetry.onmouseover = () => btnRetry.style.background = '#FFE033';
+        btnRetry.onmouseout = () => btnRetry.style.background = '#FFF066';
         btnRetry.onclick = () => { overlay.remove(); resolve(true); };
 
         const btnSkip = document.createElement('button');
