@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "מטבעלי",
-  "version": "1.0",
+  "version": "1.8",
   "icons": {
     "16": "images/ICON16.png",
     "48": "images/ICON48.png",
@@ -31,7 +31,7 @@
     {
       "matches": ["*://*.aliexpress.com/*"],
       "js": ["innerCoinsContent.js"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ],
   "action": {
