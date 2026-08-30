@@ -1,21 +1,74 @@
 // innerCoinsContent.js
 
+// --- זיוף עמוק של מכשיר נייד (חובה להריץ לפני הכל) ---
+function spoofMobileJS() {
+    const script = document.createElement('script');
+    script.textContent = `
+        try {
+            Object.defineProperty(navigator, 'userAgent', { get: () => "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36" });
+            Object.defineProperty(navigator, 'platform', { get: () => "Linux armv8l" });
+            Object.defineProperty(navigator, 'vendor', { get: () => "Google Inc." });
+            Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
+        } catch(e) {}
+    `;
+    if (document.documentElement) {
+        document.documentElement.appendChild(script);
+        script.remove();
+    }
+}
+// מריץ את הזיוף באופן מיידי לפני טעינת שאר האתר
+spoofMobileJS();
+
 const DELAY_TASK = 16000; 
-const MAX_PASSES = 3; 
+const MAX_PASSES = 5; // הועלה ל-5 סבבי סריקה להבטחת איסוף מלא
+const MAX_RETRIES_DRAWER = 25; 
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
+window.isClickerRunning = false; 
+
+function injectMatbehStyles() {
+    if (document.getElementById('matbehAli-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'matbehAli-styles';
+    style.innerHTML = `
+        .matbeh-font {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+            direction: rtl !important;
+        }
+        .matbeh-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px;
+        }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+}
+
+// מחרוזות של האייקונים החדשים (SVG) בצבע האדום של התוסף (#D32F2F)
+const ICONS = {
+    SUCCESS: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    WAIT: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+    PASS: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
+    INFO: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+};
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "startAutoCollect") {
+        injectMatbehStyles();
         chrome.storage.local.set({
             matbehAli_resumeCollect: true,
-            matbehAli_userStarted: false,
             matbehAli_clickedCount: 0,
             matbehAli_passCount: 1,
             matbehAli_taskTime: 0
-        }, () => {
-            showStartButton();
+        }, async () => {
             sendResponse({ status: "SUCCESS" });
+            showIndicator("הדף נטען! מתכונן לאיסוף...", "SUCCESS");
+            
+            // המתנה מוגדלת של 5 שניות לפני תחילת העבודה
+            await delay(5000);
+            
+            if (!window.isClickerRunning) runAutoClicker();
         });
         return true;
     }
@@ -23,14 +76,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 window.addEventListener('load', () => {
     if (window.innerWidth > 600) return;
+    
+    injectMatbehStyles();
 
     chrome.storage.local.get(null, (state) => {
         if (!state.matbehAli_resumeCollect) return;
-
-        if (!state.matbehAli_userStarted) {
-            setTimeout(showStartButton, 3000);
-            return;
-        }
 
         const isCoinPage = window.location.href.includes('coin');
 
@@ -40,233 +90,183 @@ window.addEventListener('load', () => {
             const remaining = Math.max(0, DELAY_TASK - elapsed);
             let timeLeft = Math.ceil(remaining / 1000);
             
-            const indicator = showIndicator(`מטבעלי: גולש באתר... ממתין ${timeLeft} שניות`, "WAIT");
+            const indicator = showIndicator(`מבצע משימה... ממתין ${timeLeft} שניות`, "WAIT");
             
             const timer = setInterval(() => {
                 timeLeft--;
                 if (timeLeft > 0) {
-                    if (indicator) indicator.textContent = `מטבעלי: גולש באתר... ממתין ${timeLeft} שניות`;
+                    if (indicator) indicator.innerHTML = `<span class="matbeh-icon">${ICONS.WAIT}</span><span>מבצע משימה... ממתין ${timeLeft} שניות</span>`;
                 } else {
                     clearInterval(timer);
                     if (indicator) {
-                        indicator.textContent = "מטבעלי: חוזר לאיסוף...";
-                        indicator.style.background = "#f0fdf4";
-                        indicator.style.color = "#166534";
-                        indicator.style.borderColor = "#bbf7d0";
+                        indicator.style.background = "#FFFBE6";
+                        indicator.style.color = "#111827";
+                        indicator.style.borderColor = "#FFD700";
+                        indicator.innerHTML = `<span class="matbeh-icon">${ICONS.SUCCESS}</span><span>מסיים משימה וחוזר...</span>`;
                     }
                     setTimeout(() => {
                         window.location.href = "https://m.aliexpress.com/p/coin-index/index.html";
-                    }, 1000);
+                    }, 1500);
                 }
             }, 1000);
         } else {
-            if (state.matbehAli_taskTime) {
+            if (state.matbehAli_taskTime > 0) {
                 chrome.storage.local.set({ matbehAli_taskTime: 0 });
+                showIndicator("חוזר להמשך סריקה...", "SUCCESS");
+                
+                // המתנה מוגדלת גם כשחוזרים ממשימה
+                setTimeout(() => {
+                    if (!window.isClickerRunning) runAutoClicker();
+                }, 5000);
             }
-            showIndicator("מטבעלי: חוזר להמשך סריקה...", "SUCCESS");
-            setTimeout(runAutoClicker, 5000);
         }
     });
 });
 
 function showIndicator(text, themeType) {
-    let bgColor, textColor, borderColor;
+    let bgColor, textColor, borderColor, svgIcon;
     
+    // שימוש אך ורק בצבעים הרשמיים של התוסף
     if (themeType === "SUCCESS") {
-        bgColor = "#f0fdf4"; textColor = "#166534"; borderColor = "#bbf7d0";
+        bgColor = "#FFFBE6"; textColor = "#111827"; borderColor = "#FFD700"; svgIcon = ICONS.SUCCESS;
     } else if (themeType === "WAIT") {
-        bgColor = "#fef2f2"; textColor = "#991b1b"; borderColor = "#fecaca";
+        bgColor = "#FFFFFF"; textColor = "#D32F2F"; borderColor = "#FFD700"; svgIcon = ICONS.WAIT;
     } else if (themeType === "PASS") {
-        bgColor = "#FFFBE6"; textColor = "#92400e"; borderColor = "#FFD700";
+        bgColor = "#FFF066"; textColor = "#111827"; borderColor = "#FFD700"; svgIcon = ICONS.PASS;
     } else { 
-        bgColor = "#FFFFFF"; textColor = "#D32F2F"; borderColor = "#FFD700";
+        bgColor = "#FFFFFF"; textColor = "#4b5563"; borderColor = "#FFD700"; svgIcon = ICONS.INFO;
     }
 
     let el = document.getElementById('matbehAli-indicator');
     if (!el) {
         el = document.createElement('div');
         el.id = 'matbehAli-indicator';
+        el.className = 'matbeh-font';
         if (document.body) document.body.appendChild(el);
     }
-    el.textContent = text;
-    el.style.cssText = `position:fixed;top:10px;right:10px;background:${bgColor};color:${textColor};border:2px solid ${borderColor};padding:10px 15px;z-index:2147483647;border-radius:8px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.1);direction:rtl;font-family:sans-serif;font-size:14px;pointer-events:none;`;
     
-    el.style.display = 'block';
+    el.innerHTML = `<span class="matbeh-icon">${svgIcon}</span><span>${text}</span>`;
+    
+    el.style.cssText = `
+        position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+        background: ${bgColor}; color: ${textColor}; border: 1px solid ${borderColor};
+        padding: 10px 20px; z-index: 2147483647; border-radius: 8px; font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center;
+        font-size: 14px; pointer-events: none; width: auto; max-width: 90%; white-space: nowrap;
+        transition: all 0.3s ease;
+    `;
+    
+    el.style.display = 'flex';
     return el;
-}
-
-function showStartButton() {
-    const existingInd = document.getElementById('matbehAli-indicator');
-    if (existingInd) existingInd.style.display = 'none';
-
-    let btn = document.getElementById('matbehAli-start-btn');
-    if (!btn) {
-        btn = document.createElement('button');
-        btn.id = 'matbehAli-start-btn';
-        btn.innerHTML = '▶ התחל איסוף עכשיו';
-        btn.style.cssText = `
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 2147483647; background: #FFF066; color: #D32F2F; padding: 16px 30px;
-            border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 2px solid #FFD700; cursor: pointer; direction: rtl; font-family: sans-serif; transition: all 0.2s ease;
-        `;
-        btn.onmouseover = () => { btn.style.background = '#FFE033'; btn.style.transform = 'translateX(-50%) translateY(-2px)'; };
-        btn.onmouseout = () => { btn.style.background = '#FFF066'; btn.style.transform = 'translateX(-50%)'; };
-        
-        if (document.body) document.body.appendChild(btn);
-    }
-
-    btn.onclick = () => {
-        btn.remove();
-        if (existingInd) existingInd.style.display = 'block';
-        chrome.storage.local.set({ matbehAli_userStarted: true }, () => {
-            runAutoClicker();
-        });
-    };
-}
-
-function showAskDialog(message) {
-    return new Promise(resolve => {
-        const overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:2147483647;display:flex;align-items:center;justify-content:center;';
-
-        const box = document.createElement('div');
-        box.style.cssText = 'background:#FFFFFF;padding:24px;border-radius:12px;text-align:center;width:80%;max-width:320px;direction:rtl;font-family:sans-serif;box-shadow:0 10px 30px rgba(0,0,0,0.2);border:1px solid #FFD700;';
-
-        const msg = document.createElement('div');
-        msg.textContent = message;
-        msg.style.cssText = 'margin-bottom:24px;font-size:16px;font-weight:bold;color:#111827;line-height:1.4;';
-
-        const btnContainer = document.createElement('div');
-        btnContainer.style.cssText = 'display:flex;gap:12px;justify-content:center;';
-
-        const btnRetry = document.createElement('button');
-        btnRetry.textContent = 'נסה שוב';
-        btnRetry.style.cssText = 'flex:1;background:#FFF066;color:#D32F2F;border:1px solid #FFD700;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:background 0.2s;';
-        btnRetry.onmouseover = () => btnRetry.style.background = '#FFE033';
-        btnRetry.onmouseout = () => btnRetry.style.background = '#FFF066';
-        btnRetry.onclick = () => { overlay.remove(); resolve(true); };
-
-        const btnSkip = document.createElement('button');
-        btnSkip.textContent = 'דלג';
-        btnSkip.style.cssText = 'flex:1;background:#FFF;color:#4b5563;border:1px solid #e5e7eb;padding:12px;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:background 0.2s;';
-        btnSkip.onmouseover = () => btnSkip.style.background = '#f9fafb';
-        btnSkip.onmouseout = () => btnSkip.style.background = '#FFF';
-        btnSkip.onclick = () => { overlay.remove(); resolve(false); };
-
-        btnContainer.appendChild(btnRetry);
-        btnContainer.appendChild(btnSkip);
-        box.appendChild(msg);
-        box.appendChild(btnContainer);
-        overlay.appendChild(box);
-        
-        if (document.body) document.body.appendChild(overlay);
-    });
 }
 
 function findInnerElementsWithText(tags, validTexts) {
     const elements = Array.from(document.querySelectorAll(tags)).filter(el => {
         const txt = el.textContent.trim().toLowerCase();
-        return validTexts.some(t => txt === t || txt.includes(t));
+        return validTexts.some(t => txt.includes(t));
     });
+    
     return elements.filter(el => {
-        return !Array.from(el.children).some(child => {
+        const hasInnerMatch = Array.from(el.children).some(child => {
             const childTxt = child.textContent.trim().toLowerCase();
-            return validTexts.some(t => childTxt === t || childTxt.includes(t));
+            return validTexts.some(t => childTxt.includes(t));
         });
+        
+        const isVisible = el.offsetWidth > 0 && el.offsetHeight > 0;
+        return !hasInnerMatch && isVisible;
     });
 }
 
 const getTaskButtons = () => {
-    return findInnerElementsWithText('div, button, span, a', ['go', 'collect', 'claim', 'בצע', 'קבל', 'go to'])
-        .filter(btn => {
-            const txt = btn.textContent.trim().toUpperCase();
-            return ['GO', 'COLLECT', 'CLAIM', 'בצע', 'קבל', 'GO TO'].includes(txt);
-        })
+    const words = ['go', 'collect', 'claim', 'בצע', 'קבל', 'to finish', 'browse'];
+    return findInnerElementsWithText('div, button, span, a', words)
         .filter(btn => !btn.classList.contains('matbeh-ali-ignored'));
 };
 
-async function openTaskDrawerWithStuckHandling() {
-    while (true) {
-        let openTasksBtns = findInnerElementsWithText('button, div, span, p', ['earn more coins', 'get more coins', 'get more', 'הרווח עוד', 'more coins']);
+async function openTaskDrawerWithRetries() {
+    let clickedDrawer = false;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES_DRAWER; attempt++) {
         let visibleTaskButtons = getTaskButtons();
-        
         if (visibleTaskButtons.length > 0) return true;
 
-        if (openTasksBtns.length > 0) {
-            let targetBtn = openTasksBtns[openTasksBtns.length - 1]; 
-            targetBtn.click();
-            showIndicator("מטבעלי: מצאתי תפריט, ממתין 4 שניות...", "SUCCESS");
-            await delay(4000);
-            return true;
-        } else {
-            const retry = await showAskDialog("לא הצלחתי למצוא את כפתור 'Earn more coins'.\nלנסות שוב או לעצור?");
-            if (!retry) return false; 
+        if (!clickedDrawer) {
+            let openTasksBtns = findInnerElementsWithText('button, div, span, p', ['earn more coins', 'get more coins', 'get more', 'הרווח עוד', 'more coins']);
+            
+            if (openTasksBtns.length > 0) {
+                let targetBtn = openTasksBtns[openTasksBtns.length - 1]; 
+                targetBtn.click();
+                clickedDrawer = true;
+                showIndicator("פותח משימות, ממתין לטעינה...", "WAIT");
+                await delay(3000); 
+                continue; 
+            }
         }
+        
+        showIndicator(`מחפש משימות... (ניסיון ${attempt}/${MAX_RETRIES_DRAWER})`, "WAIT");
+        await delay(1000);
     }
+    return false;
 }
 
 async function runAutoClicker() {
+    if (window.isClickerRunning) return;
+    window.isClickerRunning = true;
+
     let state = await new Promise(r => chrome.storage.local.get(null, r));
     let clickedCount = parseInt(state.matbehAli_clickedCount || "0");
     let passCount = parseInt(state.matbehAli_passCount || "1");
 
-    let drawerOpen = await openTaskDrawerWithStuckHandling();
+    let drawerOpen = await openTaskDrawerWithRetries();
     if (!drawerOpen) {
+        showIndicator("לא מצאתי עוד משימות להיום.", "PASS");
+        await delay(3000);
         await finishExecution(clickedCount);
         return;
     }
 
     while (passCount <= MAX_PASSES) {
-        showIndicator(`מטבעלי: מתחיל סיבוב ${passCount} מתוך ${MAX_PASSES}...`, "PASS");
-        await delay(2000);
+        showIndicator(`סורק משימות: סיבוב ${passCount} מתוך ${MAX_PASSES}...`, "PASS");
+        await delay(2500);
         
         let taskButtons = getTaskButtons();
         
         for (let i = 0; i < taskButtons.length; i++) {
             let btn = taskButtons[i];
-            let btnText = btn.textContent.trim().toUpperCase();
+            let btnText = btn.textContent.trim().toLowerCase();
+            let isCollect = ['collect', 'claim', 'קבל'].some(w => btnText.includes(w));
             
             if (btn.disabled || btn.offsetParent === null) continue;
 
-            if (['COLLECT', 'CLAIM', 'קבל'].includes(btnText)) {
+            if (isCollect) {
                 btn.click();
                 clickedCount++;
                 await new Promise(r => chrome.storage.local.set({ matbehAli_clickedCount: clickedCount }, r));
                 
-                showIndicator(`מטבעלי: נאסף מטבע! ממתין...`, "SUCCESS");
-                await delay(3000); 
+                showIndicator(`אספתי מטבע! מתקדם...`, "SUCCESS");
+                await delay(2500); 
 
-                if (btn.offsetParent !== null && !btn.disabled && btn.textContent.trim().toUpperCase() === btnText) {
-                    let retry = await showAskDialog("לחצתי על איסוף, אבל הכפתור לא הגיב או לא נעלם.\nלנסות שוב או לדלג לבא?");
-                    if (retry) {
-                        i--; 
-                        continue;
-                    } else {
-                        btn.classList.add('matbeh-ali-ignored'); 
-                    }
+                if (btn.offsetParent !== null && !btn.disabled) {
+                    btn.classList.add('matbeh-ali-ignored'); 
                 }
                 
                 taskButtons = getTaskButtons(); 
                 i = -1; 
             } 
-            else if (['GO', 'בצע', 'GO TO'].includes(btnText)) {
+            else { 
                 await new Promise(r => chrome.storage.local.set({ matbehAli_taskTime: Date.now(), matbehAli_passCount: passCount }, r));
                 btn.click();
                 
-                showIndicator(`מטבעלי: נכנס למשימה... (ממתין 6 שניות לתגובה)`, "WAIT");
-                await delay(6000); 
+                showIndicator(`נכנס למשימה...`, "WAIT");
+                
+                await delay(4000); 
                 
                 await new Promise(r => chrome.storage.local.set({ matbehAli_taskTime: 0 }, r)); 
                 
                 if (btn.offsetParent !== null && !btn.disabled) {
-                    let retry = await showAskDialog("לחצתי GO, אבל העמוד לא עבר למשימה.\nלנסות שוב או לדלג לבא?");
-                    if (retry) {
-                        i--; 
-                        continue;
-                    } else {
-                        btn.classList.add('matbeh-ali-ignored'); 
-                    }
+                    btn.classList.add('matbeh-ali-ignored'); 
+                    showIndicator(`המשימה לא נפתחה, מדלג לבאה...`, "WAIT");
+                    await delay(1000);
                 }
 
                 taskButtons = getTaskButtons();
@@ -290,5 +290,10 @@ async function finishExecution(clickedCount) {
         'matbehAli_passCount',
         'matbehAli_activeTabId'
     ]);
-    showIndicator(`מטבעלי: סיום מוחלט! נאספו ${clickedCount} משימות. תוכל לסגור את החלון.`, "SUCCESS");
+    
+    showIndicator(`סיימתי הכל! (${clickedCount} פעולות). סוגר את החלון...`, "SUCCESS");
+    
+    setTimeout(() => {
+        window.close();
+    }, 3500);
 }
