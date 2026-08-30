@@ -30,12 +30,24 @@ async function handleInnerCoinsCollection() {
                 // שמירת מזהה הטאב כדי שאם המשתמש יסגור אותו ידנית, ננקה את הנתונים
                 chrome.storage.local.set({ matbehAli_activeTabId: tabId });
 
-                // ממתין 6 שניות ואז שולח הודעה שמקפיצה את כפתור ההתחלה
-                setTimeout(() => {
-                    chrome.tabs.sendMessage(tabId, { action: "startAutoCollect" }, () => {
-                        resolve({ status: "SUCCESS", message: "נפתח חלון, ממתין לאישור התחלה..." });
+                // במקום לחכות 6 שניות בצורה עיוורת, נשאל את הדף כל שנייה וחצי אם הוא מוכן
+                let attempts = 0;
+                const maxAttempts = 20; // יחכה בסבלנות עד 30 שניות במצטבר לטעינת הדף
+                
+                const tryStartInterval = setInterval(() => {
+                    attempts++;
+                    chrome.tabs.sendMessage(tabId, { action: "startAutoCollect" }, (response) => {
+                        if (!chrome.runtime.lastError && response && response.status === "SUCCESS") {
+                            // הדף נטען לחלוטין וענה לנו!
+                            clearInterval(tryStartInterval);
+                            resolve({ status: "SUCCESS", message: "החלון נטען, מתחיל סריקה..." });
+                        } else if (attempts >= maxAttempts) {
+                            // עבר חצי דקה והדף סירב להיטען כראוי
+                            clearInterval(tryStartInterval);
+                            resolve({ status: "FAILED", message: "הטעינה התעכבה, נסה שוב." });
+                        }
                     });
-                }, 6000); 
+                }, 1500); 
             });
         });
     });
