@@ -6,7 +6,7 @@
     <style>
         body { 
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: #FAF8ED; 
+            background: #FFFBE6; /* הרקע החיצוני - זהב עדין מאד */
             color: #111827; 
             margin: 0; 
             padding: 30px; 
@@ -14,18 +14,18 @@
             justify-content: center; 
         } 
         .container { 
-            background: #ffffff; 
+            background: #ffffff; /* התיבה המרכזית הגדולה - לבנה */
             padding: 30px; 
             border-radius: 12px; 
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04); 
             width: 100%; 
             max-width: 600px; 
-            border: 1px solid #FEF08A;
+            border: 1px solid #FFD700; 
         }
         .header-container { 
             display: flex; 
             align-items: center; 
-            border-bottom: 2px solid #FEF08A; 
+            border-bottom: 2px solid #FFD700; 
             padding-bottom: 15px; 
             position: relative; 
             margin-bottom: 25px; 
@@ -44,6 +44,7 @@
             color: #D32F2F; 
             font-weight: bold; 
         }
+        
         #version-display {
             position: absolute;
             left: 0;
@@ -52,17 +53,32 @@
             font-size: 13px;
             font-weight: bold;
             color: #D32F2F;
-            background: #FEF9C3;
+            background: #FFF066; 
             padding: 4px 8px;
             border-radius: 6px;
-            border: 1px solid #FDE047;
+            border: 1px solid #FFD700;
             cursor: pointer;
             transition: all 0.2s ease;
         }
         #version-display:hover {
-            background: #FEF08A;
+            background: #FFE033;
             transform: translateY(-50%) scale(1.05);
         }
+
+        /* אנימציית הפעימה - הועתקה מהפופ-אפ */
+        @keyframes pulse-banner {
+            0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(211, 47, 47, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
+        }
+        
+        /* מחלקה שנוספת אוטומטית רק כשיש עדכון זמין */
+        .update-available-pulse {
+            animation: pulse-banner 2s infinite !important;
+            background: #FFF066 !important;
+            border-color: #D32F2F !important;
+        }
+
         .section { margin-top: 25px; }
         
         .section-header {
@@ -70,7 +86,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            border-bottom: 3px solid #FEF08A;
+            border-bottom: 3px solid #FFD700;
             padding-bottom: 6px;
         }
         .section-header h3 { 
@@ -79,9 +95,9 @@
             color: #D32F2F; 
         }
         .btn-refresh {
-            background: #FEF9C3; 
+            background: #FFF066; 
             color: #D32F2F;
-            border: 1px solid #FDE047;
+            border: 1px solid #FFD700;
             border-radius: 50%;
             width: 32px;
             height: 32px;
@@ -94,7 +110,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .btn-refresh:hover {
-            background: #FEF08A;
+            background: #FFE033;
             transform: rotate(180deg);
         }
         .btn-refresh:active {
@@ -102,10 +118,11 @@
         }
 
         .box { 
-            background: #FFFDF0; 
+            /* התיבות הפנימיות - זהות לחלוטין לרקע החיצוני של הדף */
+            background: #FFFBE6; 
             padding: 15px 20px; 
             border-radius: 8px; 
-            border: 1px solid #FEF08A; 
+            border: 1px solid #FFD700; 
             margin-bottom: 15px; 
         }
         .row { 
@@ -114,7 +131,7 @@
             align-items: center; 
             padding-bottom: 10px; 
             margin-bottom: 10px; 
-            border-bottom: 1px dashed #FEF08A; 
+            border-bottom: 1px dashed #FFD700; 
         }
         .row:last-child { 
             border-bottom: none; 
@@ -140,12 +157,12 @@
         .btn { 
             display: inline-block; 
             padding: 12px 15px; 
-            background: #FEF9C3; 
+            background: #FFF066; 
             color: #D32F2F; 
             border-radius: 8px; 
             font-weight: bold; 
             text-align: center; 
-            border: 1px solid #FDE047; 
+            border: 1px solid #FFD700; 
             cursor: pointer; 
             font-family: inherit; 
             font-size: 15px; 
@@ -153,7 +170,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
         } 
         .btn:hover { 
-            background: #FEF08A; 
+            background: #FFE033; 
             transform: translateY(-1px); 
             box-shadow: 0 3px 6px rgba(0,0,0,0.08); 
         }
@@ -162,7 +179,7 @@
             box-shadow: none; 
         }
         .btn:disabled { 
-            background: #FAF8ED; 
+            background: #FFFBE6; 
             color: #9ca3af; 
             border-color: #E5E7EB; 
             cursor: not-allowed; 
@@ -170,12 +187,28 @@
             transform: none; 
         }
 
+        .checkbox-option {
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            color: #111827;
+            font-weight: 600;
+        }
+        .checkbox-option input {
+            accent-color: #D32F2F;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
         .footer { 
             margin-top: 30px; 
             text-align: center; 
             font-size: 13px; 
             color: #4b5563; 
-            border-top: 1px solid #FEF08A; 
+            border-top: 1px solid #FFD700; 
             padding-top: 15px; 
             line-height: 1.8; 
         }
@@ -195,7 +228,7 @@
             visibility: hidden; 
             width: 100px; 
             background-color: #D32F2F; 
-            color: #FEF9C3; 
+            color: #FFF066; 
             text-align: center; 
             border-radius: 6px; 
             padding: 5px; 
@@ -276,6 +309,23 @@
                 <button class="btn" id="btn-rerun">הרץ מחדש</button>
                 <button class="btn" id="btn-little-details">איסוף מטבעות בונוס</button>
             </div>
+            
+            <div class="box" style="margin-top: 20px; padding: 12px 15px;">
+                <div style="text-align: center; margin-bottom: 10px; font-weight: bold; color: #D32F2F; font-size: 15px;">
+                    התרעות על עדכונים וכשלים:
+                </div>
+                <div style="display: flex; justify-content: center; gap: 20px;">
+                    <label class="checkbox-option">
+                        <input type="checkbox" id="chkIconReplace">
+                        שינוי לוגו התוסף
+                    </label>
+                    <label class="checkbox-option">
+                        <input type="checkbox" id="chkIconBadge">
+                        סמלון התרעה על הלוגו
+                    </label>
+                </div>
+            </div>
+            
         </div>
 
         <div class="footer">
